@@ -1,4 +1,4 @@
-# 🧾 Bill Splitter
+# 🧾 Split Bill
 
 Web app simpel buat bagi-bagi tagihan (makan, belanja, dll) ke beberapa orang. Masing-masing bayar sesuai apa yang dia ambil + pajak/service dibagi proporsional (adil — yang ambil banyak bayar pajak lebih banyak juga).
 
