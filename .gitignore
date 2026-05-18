@@ -1,0 +1,24 @@
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local env (just in case)
+.env
+.env.local
+
+# Vercel
+.vercel
+
+# Claude Code local settings
+.claude/

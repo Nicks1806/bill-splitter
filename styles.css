@@ -1,0 +1,90 @@
+/* Minor custom styles on top of Tailwind */
+
+/* Smooth focus animations */
+input, button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hide number input spinners (cleaner look on mobile) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Details/summary arrow tweak */
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::before {
+  content: '▸ ';
+  display: inline-block;
+  transition: transform 0.15s;
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+/* Toast animation already handled by Tailwind classes */
+
+/* Better scrollbar (subtle, only where overflow) */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+.overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Subtle entry animation for cards */
+section {
+  animation: slideUp 0.3s ease-out backwards;
+}
+section:nth-child(1) { animation-delay: 0s; }
+section:nth-child(2) { animation-delay: 0.05s; }
+section:nth-child(3) { animation-delay: 0.1s; }
+section:nth-child(4) { animation-delay: 0.15s; }
+section:nth-child(5) { animation-delay: 0.2s; }
+section:nth-child(6) { animation-delay: 0.25s; }
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Print: clean view for screenshot/sharing */
+@media print {
+  header, #btn-share, #btn-save, #btn-history, #btn-reset,
+  #modal-history, #modal-item, #toast,
+  section:has(#person-input),
+  section:has(#receipt-file),
+  section:has(#add-item),
+  section:has(#tax-percent) {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  main {
+    padding-top: 0 !important;
+  }
+}

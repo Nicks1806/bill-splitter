@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#0ea5e9">
+  <title>Bill Splitter — Bagi Bon Adil</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc',
+              400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1',
+              800: '#075985', 900: '#0c4a6e'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen">
+
+  <!-- Header -->
+  <header class="bg-gradient-to-br from-brand-600 to-brand-800 text-white shadow-lg">
+    <div class="max-w-3xl mx-auto px-4 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="text-3xl">🧾</div>
+        <div>
+          <h1 class="text-xl font-bold leading-tight">Bill Splitter</h1>
+          <p class="text-xs text-brand-100 opacity-90">Bagi bon adil + pajak proporsional</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="btn-history" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition" title="Riwayat">
+          📚 <span class="hidden sm:inline">Riwayat</span>
+        </button>
+        <button id="btn-reset" class="text-sm bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition" title="Mulai Baru">
+          ✨ <span class="hidden sm:inline">Baru</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-3xl mx-auto px-4 py-6 space-y-5 pb-32">
+
+    <!-- Bill info -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">📋</span>
+        <h2 class="font-semibold text-slate-700">Info Tagihan</h2>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-medium text-slate-600">Judul</label>
+          <input id="bill-title" type="text" placeholder="Mis: Makan di Warung Bu Tini"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Tanggal</label>
+          <input id="bill-date" type="date"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+      </div>
+    </section>
+
+    <!-- People -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">👥</span>
+          <h2 class="font-semibold text-slate-700">Orang yang Bayar</h2>
+        </div>
+        <span id="people-count" class="text-xs bg-brand-50 text-brand-700 px-2 py-1 rounded-full font-medium">0 orang</span>
+      </div>
+      <div class="flex gap-2 mb-3">
+        <input id="person-input" type="text" placeholder="Nama orang..."
+          class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        <button id="add-person" class="bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm">
+          + Tambah
+        </button>
+      </div>
+      <div id="people-list" class="flex flex-wrap gap-2"></div>
+      <p id="people-empty" class="text-sm text-slate-400 italic">Belum ada orang. Tambahin dulu yuk.</p>
+    </section>
+
+    <!-- OCR upload -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">📸</span>
+        <h2 class="font-semibold text-slate-700">Scan Foto Struk (Opsional)</h2>
+      </div>
+      <p class="text-xs text-slate-500 mb-3">Upload foto struk → otomatis dibaca. Hasilnya bisa diedit kalau ada yang salah.</p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <label for="receipt-file" class="flex-1 cursor-pointer">
+          <div class="border-2 border-dashed border-brand-300 rounded-xl px-4 py-6 text-center hover:bg-brand-50 hover:border-brand-400 transition">
+            <div class="text-2xl mb-1">📷</div>
+            <div class="text-sm font-medium text-brand-700">Pilih foto struk</div>
+            <div class="text-xs text-slate-500 mt-0.5">JPG, PNG, atau lainnya</div>
+          </div>
+          <input id="receipt-file" type="file" accept="image/*" class="hidden" />
+        </label>
+      </div>
+      <div id="ocr-status" class="hidden mt-3 text-sm"></div>
+      <div id="ocr-preview" class="hidden mt-3"></div>
+    </section>
+
+    <!-- Items -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🍽️</span>
+          <h2 class="font-semibold text-slate-700">Barang / Menu</h2>
+        </div>
+        <span id="items-count" class="text-xs bg-brand-50 text-brand-700 px-2 py-1 rounded-full font-medium">0 item</span>
+      </div>
+
+      <div id="items-list" class="space-y-2 mb-3"></div>
+      <p id="items-empty" class="text-sm text-slate-400 italic mb-3">Belum ada barang.</p>
+
+      <button id="add-item" class="w-full bg-brand-50 hover:bg-brand-100 text-brand-700 border-2 border-dashed border-brand-300 px-4 py-3 rounded-xl font-medium transition flex items-center justify-center gap-2">
+        <span class="text-lg">+</span> Tambah Barang
+      </button>
+    </section>
+
+    <!-- Charges -->
+    <section class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">💰</span>
+        <h2 class="font-semibold text-slate-700">Pajak & Biaya Lain</h2>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-medium text-slate-600">Pajak (%)</label>
+          <input id="tax-percent" type="number" inputmode="decimal" min="0" step="0.1" placeholder="10"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Service Charge (%)</label>
+          <input id="service-percent" type="number" inputmode="decimal" min="0" step="0.1" placeholder="5"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Diskon (%)</label>
+          <input id="discount-percent" type="number" inputmode="decimal" min="0" step="0.1" placeholder="0"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Diskon (Rp)</label>
+          <input id="discount-amount" type="number" inputmode="decimal" min="0" step="100" placeholder="0"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+      </div>
+      <p class="text-xs text-slate-500 mt-3 leading-relaxed">
+        💡 Pajak/service dihitung <strong>proporsional</strong> berdasarkan total tiap orang. Yang makan banyak otomatis bayar pajak lebih banyak — adil.
+      </p>
+    </section>
+
+    <!-- Summary -->
+    <section class="bg-gradient-to-br from-brand-50 to-white rounded-2xl shadow-sm border border-brand-200 p-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">📊</span>
+          <h2 class="font-semibold text-slate-700">Ringkasan</h2>
+        </div>
+      </div>
+
+      <div id="summary-totals" class="mb-4 space-y-1 text-sm"></div>
+      <div id="summary-per-person" class="space-y-3"></div>
+      <p id="summary-empty" class="text-sm text-slate-400 italic text-center py-6">Tambah orang & barang dulu buat lihat hitungannya.</p>
+    </section>
+
+    <!-- Actions -->
+    <section class="flex flex-col sm:flex-row gap-2">
+      <button id="btn-share" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-3 rounded-xl font-medium transition shadow-sm flex items-center justify-center gap-2">
+        🔗 Salin Link Share
+      </button>
+      <button id="btn-save" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-3 rounded-xl font-medium transition shadow-sm flex items-center justify-center gap-2">
+        💾 Simpan ke Riwayat
+      </button>
+    </section>
+
+    <footer class="text-center text-xs text-slate-400 pt-6">
+      Dibuat dengan ❤️ — data cuma disimpan di browser kamu, gak ke server.
+    </footer>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-4 py-2.5 rounded-xl shadow-xl text-sm opacity-0 pointer-events-none transition-all translate-y-2 z-50"></div>
+
+  <!-- Modal: History -->
+  <div id="modal-history" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <h3 class="font-bold text-slate-800">📚 Riwayat Tagihan</h3>
+        <button class="modal-close text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
+      </div>
+      <div id="history-list" class="overflow-y-auto p-4 space-y-2"></div>
+    </div>
+  </div>
+
+  <!-- Modal: Item editor -->
+  <div id="modal-item" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40 items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full overflow-hidden flex flex-col shadow-2xl">
+      <div class="flex items-center justify-between px-5 py-4 border-b border-slate-200">
+        <h3 id="modal-item-title" class="font-bold text-slate-800">Tambah Barang</h3>
+        <button class="modal-close text-slate-400 hover:text-slate-700 text-2xl leading-none">×</button>
+      </div>
+      <div class="p-5 space-y-3 overflow-y-auto">
+        <div>
+          <label class="text-xs font-medium text-slate-600">Nama Barang</label>
+          <input id="item-name" type="text" placeholder="Mis: Nasi Goreng"
+            class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs font-medium text-slate-600">Harga Satuan (Rp)</label>
+            <input id="item-price" type="number" inputmode="decimal" min="0" step="100" placeholder="25000"
+              class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+          </div>
+          <div>
+            <label class="text-xs font-medium text-slate-600">Jumlah</label>
+            <input id="item-qty" type="number" inputmode="numeric" min="1" step="1" value="1"
+              class="mt-1 w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-400 focus:border-brand-500 outline-none transition" />
+          </div>
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600 block mb-1.5">Siapa yang ambil? <span class="text-slate-400 font-normal">(bisa lebih dari 1, dibagi rata)</span></label>
+          <div id="item-assignees" class="flex flex-wrap gap-2"></div>
+          <p id="item-assignees-empty" class="text-xs text-slate-400 italic">Tambah orang dulu di section atas.</p>
+        </div>
+      </div>
+      <div class="flex gap-2 px-5 py-4 border-t border-slate-200 bg-slate-50">
+        <button class="modal-close flex-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 px-4 py-2 rounded-lg font-medium transition">Batal</button>
+        <button id="item-save" class="flex-1 bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg font-medium transition">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tesseract OCR -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"></script>
+
+  <!-- App scripts (order matters) -->
+  <script src="js/utils.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/calculator.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/ocr.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
