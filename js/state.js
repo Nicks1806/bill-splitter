@@ -5,6 +5,7 @@ const State = {
     id: null,
     title: '',
     date: Utils.todayISO(),
+    note: '',
     people: [],     // [{ id, name }]
     items: [],      // [{ id, name, price, qty, assignedTo: [personId, ...] }]
     charges: {
@@ -12,6 +13,7 @@ const State = {
       servicePercent: 0,
       discountPercent: 0,
       discountAmount: 0,
+      actualTotal: 0,  // optional: actual total from receipt → drives "Lainnya" auto-calc
     },
   },
 
@@ -23,9 +25,10 @@ const State = {
       id: Utils.uid('bill'),
       title: '',
       date: Utils.todayISO(),
+      note: '',
       people: [],
       items: [],
-      charges: { taxPercent: 0, servicePercent: 0, discountPercent: 0, discountAmount: 0 },
+      charges: { taxPercent: 0, servicePercent: 0, discountPercent: 0, discountAmount: 0, actualTotal: 0 },
     };
     this.saveDraft();
   },
@@ -101,6 +104,7 @@ const State = {
   updateMeta(patch) {
     if (patch.title !== undefined) this.current.title = patch.title;
     if (patch.date !== undefined) this.current.date = patch.date;
+    if (patch.note !== undefined) this.current.note = patch.note;
     this.saveDraft();
   },
 
@@ -187,6 +191,7 @@ const State = {
       id: obj.id || Utils.uid('bill'),
       title: obj.title || '',
       date: obj.date || Utils.todayISO(),
+      note: obj.note || '',
       people: Array.isArray(obj.people) ? obj.people.filter(p => p && p.id && p.name) : [],
       items: Array.isArray(obj.items) ? obj.items.map(i => ({
         id: i.id || Utils.uid('i'),
@@ -200,6 +205,7 @@ const State = {
         servicePercent: Number(obj.charges?.servicePercent) || 0,
         discountPercent: Number(obj.charges?.discountPercent) || 0,
         discountAmount: Number(obj.charges?.discountAmount) || 0,
+        actualTotal: Number(obj.charges?.actualTotal) || 0,
       },
     };
   },

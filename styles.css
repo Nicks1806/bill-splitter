@@ -1,11 +1,14 @@
-/* Minor custom styles on top of Tailwind */
+/* Dark theme tweaks on top of Tailwind */
 
-/* Smooth focus animations */
-input, button {
+html, body {
+  background-color: #0a0e14;
+}
+
+input, button, textarea {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Hide number input spinners (cleaner look on mobile) */
+/* Hide number input spinners */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -15,76 +18,150 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+/* Date input: keep dark-friendly */
+input[type="date"] {
+  color-scheme: dark;
+}
+
 /* Details/summary arrow tweak */
 details > summary {
   list-style: none;
+  cursor: pointer;
 }
 details > summary::-webkit-details-marker {
   display: none;
 }
-details > summary::before {
-  content: '▸ ';
-  display: inline-block;
-  transition: transform 0.15s;
-}
-details[open] > summary::before {
-  transform: rotate(90deg);
-}
 
-/* Toast animation already handled by Tailwind classes */
-
-/* Better scrollbar (subtle, only where overflow) */
-.overflow-y-auto {
+/* Scrollbar — subtle for dark theme */
+.overflow-y-auto, .overflow-auto {
   scrollbar-width: thin;
-  scrollbar-color: #cbd5e1 transparent;
+  scrollbar-color: #334155 transparent;
 }
-.overflow-y-auto::-webkit-scrollbar {
+.overflow-y-auto::-webkit-scrollbar,
+.overflow-auto::-webkit-scrollbar {
   width: 6px;
 }
-.overflow-y-auto::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+.overflow-y-auto::-webkit-scrollbar-thumb,
+.overflow-auto::-webkit-scrollbar-thumb {
+  background: #334155;
   border-radius: 3px;
 }
-.overflow-y-auto::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+.overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.overflow-auto::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
-/* Subtle entry animation for cards */
+/* Gojek-style item row */
+.item-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px dashed #334155;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.item-row:last-child {
+  border-bottom: none;
+}
+.item-row:hover {
+  background: rgba(0, 170, 19, 0.06);
+}
+.item-row .item-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #f1f5f9;
+  line-height: 1.25;
+  word-break: break-word;
+}
+.item-row .item-qty {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  background: #1e2630;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.item-row .item-price {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #f1f5f9;
+  text-align: right;
+  white-space: nowrap;
+}
+.item-row .item-meta {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* Summary rows */
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #cbd5e1;
+}
+.summary-row.total {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #f8fafc;
+  padding-top: 10px;
+  border-top: 1px solid #334155;
+  margin-top: 4px;
+}
+.summary-row.discount {
+  color: #22c55e;
+}
+.summary-row.warn-bg {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  padding: 8px 12px;
+  border-radius: 10px;
+  color: #fbbf24;
+}
+
+/* Card animation on mount */
 section {
-  animation: slideUp 0.3s ease-out backwards;
+  animation: slideUp 0.25s ease-out backwards;
 }
-section:nth-child(1) { animation-delay: 0s; }
-section:nth-child(2) { animation-delay: 0.05s; }
-section:nth-child(3) { animation-delay: 0.1s; }
-section:nth-child(4) { animation-delay: 0.15s; }
-section:nth-child(5) { animation-delay: 0.2s; }
-section:nth-child(6) { animation-delay: 0.25s; }
-
+section:nth-of-type(1) { animation-delay: 0s; }
+section:nth-of-type(2) { animation-delay: 0.04s; }
+section:nth-of-type(3) { animation-delay: 0.08s; }
+section:nth-of-type(4) { animation-delay: 0.12s; }
+section:nth-of-type(5) { animation-delay: 0.16s; }
 @keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Modal slide up animation on mobile */
+@media (max-width: 640px) {
+  #modal-item > div, #modal-history > div {
+    animation: slideUpModal 0.2s ease-out;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  @keyframes slideUpModal {
+    from { transform: translateY(40px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 }
 
-/* Print: clean view for screenshot/sharing */
+/* Print: hide UI chrome */
 @media print {
   header, #btn-share, #btn-save, #btn-history, #btn-reset,
-  #modal-history, #modal-item, #toast,
+  #modal-history, #modal-item, #modal-receipt, #toast,
+  #scan-card, .fixed,
   section:has(#person-input),
-  section:has(#receipt-file),
   section:has(#add-item),
   section:has(#tax-percent) {
     display: none !important;
   }
-  body {
-    background: white !important;
-  }
-  main {
-    padding-top: 0 !important;
-  }
+  body { background: white !important; color: black !important; }
+  .item-row { border-color: #ddd !important; }
 }

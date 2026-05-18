@@ -8,6 +8,7 @@ const Share = {
     const compact = {
       t: state.title || '',
       d: state.date || '',
+      n: state.note || '',
       p: (state.people || []).map(p => [p.id, p.name]),
       i: (state.items || []).map(i => [i.id, i.name, i.price, i.qty, i.assignedTo]),
       c: [
@@ -15,6 +16,7 @@ const Share = {
         Number(state.charges?.servicePercent) || 0,
         Number(state.charges?.discountPercent) || 0,
         Number(state.charges?.discountAmount) || 0,
+        Number(state.charges?.actualTotal) || 0,
       ],
     };
     const json = JSON.stringify(compact);
@@ -38,6 +40,7 @@ const Share = {
         id: Utils.uid('bill'),
         title: compact.t || '',
         date: compact.d || Utils.todayISO(),
+        note: compact.n || '',
         people: (compact.p || []).map(([id, name]) => ({ id, name })),
         items: (compact.i || []).map(([id, name, price, qty, assignedTo]) => ({
           id, name, price: Number(price) || 0, qty: Number(qty) || 1,
@@ -48,6 +51,7 @@ const Share = {
           servicePercent: Number(compact.c?.[1]) || 0,
           discountPercent: Number(compact.c?.[2]) || 0,
           discountAmount: Number(compact.c?.[3]) || 0,
+          actualTotal: Number(compact.c?.[4]) || 0,
         },
       };
     } catch (e) {

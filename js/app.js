@@ -9,7 +9,6 @@
 
   // ---- Init ----
   function init() {
-    // Priority: share link in URL > saved draft > new bill
     const shared = Share.readFromHash();
     if (shared) {
       State.loadFromObject(shared);
@@ -31,6 +30,9 @@
     document.getElementById('bill-date').addEventListener('input', (e) => {
       State.updateMeta({ date: e.target.value });
     });
+    document.getElementById('bill-note').addEventListener('input', (e) => {
+      State.updateMeta({ note: e.target.value });
+    });
 
     // People
     const personInput = document.getElementById('person-input');
@@ -47,7 +49,6 @@
       if (e.key === 'Enter') { e.preventDefault(); addPerson(); }
     });
 
-    // Delegate clicks on people list (remove person)
     document.getElementById('people-list').addEventListener('click', (e) => {
       const btn = e.target.closest('[data-action="remove-person"]');
       if (!btn) return;
@@ -60,18 +61,10 @@
       UI.openItemModal(null);
     });
 
-    // Delegate clicks on items list
+    // Click anywhere on the row → edit modal
     document.getElementById('items-list').addEventListener('click', (e) => {
-      const editBtn = e.target.closest('[data-action="edit-item"]');
-      const delBtn = e.target.closest('[data-action="remove-item"]');
-      if (editBtn) {
-        UI.openItemModal(editBtn.getAttribute('data-id'));
-      } else if (delBtn) {
-        if (confirm('Hapus barang ini?')) {
-          State.removeItem(delBtn.getAttribute('data-id'));
-          render();
-        }
-      }
+      const row = e.target.closest('[data-action="edit-item"]');
+      if (row) UI.openItemModal(row.getAttribute('data-id'));
     });
 
     // Modal: item save
@@ -81,41 +74,51 @@
       const qty = Math.max(1, parseInt(document.getElementById('item-qty').value, 10) || 1);
       const assignedTo = UI.getModalItemSelectedAssignees();
 
-      if (!name) { Utils.toast('Nama barang masih kosong', 'error'); return; }
+      if (!name) { Utils.toast('Nama item masih kosong', 'error'); return; }
       if (price <= 0) { Utils.toast('Harga harus lebih dari 0', 'error'); return; }
 
       if (UI.editingItemId) {
         State.updateItem(UI.editingItemId, { name, price, qty, assignedTo });
-        Utils.toast('Barang diupdate', 'success');
+        Utils.toast('Item diupdate', 'success');
       } else {
         State.addItem({ name, price, qty, assignedTo });
-        Utils.toast('Barang ditambah', 'success');
+        Utils.toast('Item ditambah', 'success');
       }
       UI.closeModals();
       render();
+    });
+
+    // Modal: item delete (only visible in edit mode)
+    document.getElementById('item-delete')?.addEventListener('click', () => {
+      if (!UI.editingItemId) return;
+      if (!confirm('Hapus item ini?')) return;
+      State.removeItem(UI.editingItemId);
+      UI.closeModals();
+      render();
+      Utils.toast('Item dihapus', 'info');
     });
 
     // Modal: assignee chip toggles
     document.getElementById('item-assignees').addEventListener('click', (e) => {
       const chip = e.target.closest('.assignee-chip');
       if (!chip) return;
-      const isActive = chip.classList.contains('bg-brand-600');
+      const isActive = chip.classList.contains('bg-brand-500');
       if (isActive) {
-        chip.classList.remove('bg-brand-600', 'text-white', 'border-brand-600');
-        chip.classList.add('bg-white', 'text-slate-700', 'border-slate-300');
+        chip.classList.remove('bg-brand-500', 'text-white', 'border-brand-500');
+        chip.classList.add('bg-ink-900', 'text-ink-200', 'border-ink-700');
         chip.textContent = chip.textContent.replace(/^✓\s*/, '');
       } else {
-        chip.classList.add('bg-brand-600', 'text-white', 'border-brand-600');
-        chip.classList.remove('bg-white', 'text-slate-700', 'border-slate-300');
+        chip.classList.add('bg-brand-500', 'text-white', 'border-brand-500');
+        chip.classList.remove('bg-ink-900', 'text-ink-200', 'border-ink-700');
         if (!chip.textContent.startsWith('✓')) chip.textContent = '✓ ' + chip.textContent;
       }
     });
 
-    // Generic modal close (close button + click outside)
+    // Generic modal close
     document.querySelectorAll('.modal-close').forEach(btn => {
       btn.addEventListener('click', () => UI.closeModals());
     });
-    document.querySelectorAll('#modal-item, #modal-history').forEach(m => {
+    document.querySelectorAll('#modal-item, #modal-history, #modal-receipt').forEach(m => {
       m.addEventListener('click', (e) => {
         if (e.target === m) UI.closeModals();
       });
@@ -124,12 +127,13 @@
       if (e.key === 'Escape') UI.closeModals();
     });
 
-    // Charges
+    // Charges (incl. new actualTotal field)
     const chargeFields = [
       ['tax-percent', 'taxPercent'],
       ['service-percent', 'servicePercent'],
       ['discount-percent', 'discountPercent'],
       ['discount-amount', 'discountAmount'],
+      ['actual-total', 'actualTotal'],
     ];
     chargeFields.forEach(([id, key]) => {
       const el = document.getElementById(id);
@@ -150,7 +154,7 @@
       const url = Share.buildUrl(s);
       const ok = await Share.copyToClipboard(url);
       if (ok) {
-        Utils.toast('🔗 Link tersalin! Tinggal paste ke chat.', 'success');
+        Utils.toast('🔗 Link tersalin! Paste ke chat.', 'success');
       } else {
         prompt('Link share (copy manual):', url);
       }
@@ -160,7 +164,7 @@
     document.getElementById('btn-save').addEventListener('click', () => {
       const s = State.current;
       if (s.people.length === 0 || s.items.length === 0) {
-        Utils.toast('Tambah orang & barang dulu', 'error');
+        Utils.toast('Tambah orang & item dulu', 'error');
         return;
       }
       State.saveToHistory();
@@ -176,6 +180,7 @@
       const delBtn = e.target.closest('[data-action="delete-history"]');
       if (loadBtn) {
         State.loadFromHistory(loadBtn.getAttribute('data-id'));
+        UI.setReceiptPhoto(null);
         UI.closeModals();
         render();
         Utils.toast('Tagihan dimuat dari riwayat', 'success');
@@ -195,6 +200,7 @@
       State.newBill();
       render();
       ocrResult = null;
+      UI.setReceiptPhoto(null);
       UI.hideOCRStatus();
       document.getElementById('ocr-preview').classList.add('hidden');
       Utils.toast('Tagihan baru dimulai', 'info');
@@ -202,6 +208,11 @@
 
     // OCR
     document.getElementById('receipt-file').addEventListener('change', handleOCRFile);
+
+    // Receipt thumbnail → lightbox
+    document.getElementById('receipt-thumb-btn')?.addEventListener('click', () => {
+      UI.openReceiptLightbox();
+    });
 
     // OCR preview actions
     document.getElementById('ocr-preview').addEventListener('click', (e) => {
@@ -225,7 +236,6 @@
   }
 
   // ---- OCR handler ----
-  // Translate Tesseract's English status strings to friendlier Indonesian.
   const STATUS_LABELS = {
     'memuat gambar': 'Memuat gambar',
     'memproses gambar': 'Memproses gambar',
@@ -239,18 +249,33 @@
     'recognizing text': 'Membaca teks dari struk',
   };
 
+  function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Gagal load foto'));
+      reader.readAsDataURL(file);
+    });
+  }
+
   async function handleOCRFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = ''; // reset so same file can be re-selected
+    e.target.value = '';
+
+    // Show thumbnail immediately
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      UI.setReceiptPhoto(dataUrl);
+    } catch {}
 
     UI.showOCRStatus(`
       <div class="flex items-center gap-3">
-        <div class="animate-spin w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full shrink-0"></div>
+        <div class="animate-spin w-5 h-5 border-2 border-brand-400 border-t-transparent rounded-full shrink-0"></div>
         <div class="min-w-0">
           <div class="font-medium">Membaca struk...</div>
           <div id="ocr-progress" class="text-xs opacity-75 truncate">Memulai...</div>
-          <div class="text-xs opacity-50 mt-0.5">Pertama kali agak lama (~30 detik), berikutnya cepat.</div>
+          <div class="text-xs opacity-60 mt-0.5">Pertama kali agak lama (~30 dtk), berikutnya cepat.</div>
         </div>
       </div>
     `, 'info');
@@ -268,7 +293,6 @@
 
       ocrResult = result;
 
-      // Apply detected tax/service/discount if found and current values are 0
       const detected = [];
       if (result.meta) {
         const patch = {};
@@ -278,7 +302,7 @@
         }
         if (result.meta.servicePercent && !State.current.charges.servicePercent) {
           patch.servicePercent = result.meta.servicePercent;
-          detected.push(`Service ${result.meta.servicePercent}%`);
+          detected.push(`Servis ${result.meta.servicePercent}%`);
         }
         if (result.meta.discountPercent && !State.current.charges.discountPercent) {
           patch.discountPercent = result.meta.discountPercent;
@@ -294,8 +318,8 @@
       if (result.items.length === 0) {
         UI.showOCRStatus(`
           <div class="font-medium">⚠️ Belum ada item yang kebaca otomatis</div>
-          <div class="text-xs mt-1">Coba foto yang lebih jelas (tidak miring, pencahayaan cukup), atau tambahin manual aja.</div>
-          ${result.rawText ? `<details class="mt-2"><summary class="text-xs cursor-pointer hover:underline">Lihat hasil mentah OCR</summary><pre class="text-xs mt-1 p-2 bg-white/50 rounded max-h-40 overflow-auto whitespace-pre-wrap">${Utils.escapeHtml(result.rawText)}</pre></details>` : ''}
+          <div class="text-xs mt-1">Coba foto yang lebih jelas (tidak miring, pencahayaan cukup), atau tambahin manual.</div>
+          ${result.rawText ? `<details class="mt-2"><summary class="text-xs cursor-pointer hover:underline">Lihat hasil mentah OCR</summary><pre class="text-[11px] mt-1 p-2 bg-black/30 rounded max-h-40 overflow-auto whitespace-pre-wrap">${Utils.escapeHtml(result.rawText)}</pre></details>` : ''}
         `, 'error');
         document.getElementById('ocr-preview').classList.add('hidden');
       } else {
@@ -304,9 +328,9 @@
           : '';
         UI.showOCRStatus(`
           <div class="font-medium">✅ Ketemu ${result.items.length} item</div>
-          <div class="text-xs mt-1">Edit dulu kalau ada yang salah sebelum ditambah.</div>
+          <div class="text-xs mt-1">Cek dulu, edit kalau salah sebelum ditambah.</div>
           ${detectedMsg}
-          ${result.rawText ? `<details class="mt-2"><summary class="text-xs cursor-pointer hover:underline opacity-75">Lihat hasil mentah OCR (debug)</summary><pre class="text-xs mt-1 p-2 bg-white/50 rounded max-h-40 overflow-auto whitespace-pre-wrap">${Utils.escapeHtml(result.rawText)}</pre></details>` : ''}
+          ${result.rawText ? `<details class="mt-2"><summary class="text-xs cursor-pointer hover:underline opacity-75">Lihat hasil mentah OCR (debug)</summary><pre class="text-[11px] mt-1 p-2 bg-black/30 rounded max-h-40 overflow-auto whitespace-pre-wrap">${Utils.escapeHtml(result.rawText)}</pre></details>` : ''}
         `, 'success');
         UI.showOCRPreview(result.items);
       }
@@ -320,7 +344,6 @@
     }
   }
 
-  // Run on DOM ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {
