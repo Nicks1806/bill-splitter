@@ -225,6 +225,20 @@
   }
 
   // ---- OCR handler ----
+  // Translate Tesseract's English status strings to friendlier Indonesian.
+  const STATUS_LABELS = {
+    'memuat gambar': 'Memuat gambar',
+    'memproses gambar': 'Memproses gambar',
+    'siap mengenali': 'Siap mengenali',
+    'memproses gambar...': 'Memproses gambar',
+    'loading tesseract core': 'Memuat engine OCR (~2MB)',
+    'initializing tesseract': 'Init engine',
+    'loading language traineddata': 'Download model bahasa (~10MB, sekali aja)',
+    'initialized api': 'Engine siap',
+    'initializing api': 'Init engine',
+    'recognizing text': 'Membaca teks dari struk',
+  };
+
   async function handleOCRFile(e) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -232,10 +246,11 @@
 
     UI.showOCRStatus(`
       <div class="flex items-center gap-3">
-        <div class="animate-spin w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full"></div>
-        <div>
+        <div class="animate-spin w-5 h-5 border-2 border-brand-500 border-t-transparent rounded-full shrink-0"></div>
+        <div class="min-w-0">
           <div class="font-medium">Membaca struk...</div>
-          <div id="ocr-progress" class="text-xs opacity-75">Memulai...</div>
+          <div id="ocr-progress" class="text-xs opacity-75 truncate">Memulai...</div>
+          <div class="text-xs opacity-50 mt-0.5">Pertama kali agak lama (~30 detik), berikutnya cepat.</div>
         </div>
       </div>
     `, 'info');
@@ -243,22 +258,31 @@
     try {
       const result = await OCR.runOnFile(file, (msg) => {
         const progressEl = document.getElementById('ocr-progress');
-        if (progressEl && msg.status) {
-          const pct = msg.progress ? ` (${Math.round(msg.progress * 100)}%)` : '';
-          progressEl.textContent = `${msg.status}${pct}`;
-        }
+        if (!progressEl || !msg.status) return;
+        const label = STATUS_LABELS[msg.status] || msg.status;
+        const pct = (msg.progress !== null && msg.progress !== undefined)
+          ? ` ${Math.round(msg.progress * 100)}%`
+          : '';
+        progressEl.textContent = `${label}${pct}`;
       });
 
       ocrResult = result;
 
-      // Apply detected tax/service if found and current values are 0
+      // Apply detected tax/service/discount if found and current values are 0
+      const detected = [];
       if (result.meta) {
         const patch = {};
         if (result.meta.taxPercent && !State.current.charges.taxPercent) {
           patch.taxPercent = result.meta.taxPercent;
+          detected.push(`Pajak ${result.meta.taxPercent}%`);
         }
         if (result.meta.servicePercent && !State.current.charges.servicePercent) {
           patch.servicePercent = result.meta.servicePercent;
+          detected.push(`Service ${result.meta.servicePercent}%`);
+        }
+        if (result.meta.discountPercent && !State.current.charges.discountPercent) {
+          patch.discountPercent = result.meta.discountPercent;
+          detected.push(`Diskon ${result.meta.discountPercent}%`);
         }
         if (Object.keys(patch).length > 0) {
           State.updateCharges(patch);
@@ -270,13 +294,19 @@
       if (result.items.length === 0) {
         UI.showOCRStatus(`
           <div class="font-medium">⚠️ Belum ada item yang kebaca otomatis</div>
-          <div class="text-xs mt-1">Coba foto yang lebih jelas, atau tambahin manual aja.</div>
+          <div class="text-xs mt-1">Coba foto yang lebih jelas (tidak miring, pencahayaan cukup), atau tambahin manual aja.</div>
+          ${result.rawText ? `<details class="mt-2"><summary class="text-xs cursor-pointer hover:underline">Lihat hasil mentah OCR</summary><pre class="text-xs mt-1 p-2 bg-white/50 rounded max-h-40 overflow-auto whitespace-pre-wrap">${Utils.escapeHtml(result.rawText)}</pre></details>` : ''}
         `, 'error');
         document.getElementById('ocr-preview').classList.add('hidden');
       } else {
+        const detectedMsg = detected.length > 0
+          ? `<div class="text-xs mt-1">🎯 Auto-detect: ${detected.join(' • ')}</div>`
+          : '';
         UI.showOCRStatus(`
-          <div class="font-medium">✅ Selesai! Cek hasilnya di bawah.</div>
+          <div class="font-medium">✅ Ketemu ${result.items.length} item</div>
           <div class="text-xs mt-1">Edit dulu kalau ada yang salah sebelum ditambah.</div>
+          ${detectedMsg}
+          ${result.rawText ? `<details class="mt-2"><summary class="text-xs cursor-pointer hover:underline opacity-75">Lihat hasil mentah OCR (debug)</summary><pre class="text-xs mt-1 p-2 bg-white/50 rounded max-h-40 overflow-auto whitespace-pre-wrap">${Utils.escapeHtml(result.rawText)}</pre></details>` : ''}
         `, 'success');
         UI.showOCRPreview(result.items);
       }
@@ -285,6 +315,7 @@
       UI.showOCRStatus(`
         <div class="font-medium">❌ Gagal baca struk</div>
         <div class="text-xs mt-1">${Utils.escapeHtml(err.message || 'Error tidak diketahui')}</div>
+        <div class="text-xs mt-1 opacity-75">Coba refresh halaman lalu upload ulang.</div>
       `, 'error');
     }
   }
